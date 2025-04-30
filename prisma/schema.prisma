@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EcoHabit {
+  id         String      @id @default(uuid())
+  name       String
+  icon       String
+  ecoPoints  Int         @map("eco_points")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @default(now()) @map("updated_at")
+
+  // Relations
+  dailyLogs  DailyLog[]
+  globalStats GlobalStat[]
+
+  @@map("eco_habits")
+}
+
+model User {
+  id        String     @id
+  email     String
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @default(now()) @map("updated_at")
+
+  // Relations
+  dailyLogs DailyLog[]
+  badges    Badge[]
+
+  @@map("users")
+}
+
+model DailyLog {
+  id       String   @id @default(uuid())
+  userId   String   @map("user_id")
+  habitId  String   @map("habit_id")
+  date     DateTime @db.Date
+  notes    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit    EcoHabit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, habitId, date], name: "unique_user_habit_date")
+  @@index([userId])
+  @@index([habitId]) 
+  @@index([date])
+  @@map("daily_logs")
+}
+
+model Badge {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  name       String
+  achievedAt DateTime @default(now()) @map("achieved_at")
+
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name], name: "unique_user_badge")
+  @@index([userId])
+  @@map("badges")
+}
+
+model GlobalStat {
+  date      DateTime @db.Date
+  habitId   String   @map("habit_id")
+  totalCount Int     @default(0) @map("total_count")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  // Relations
+  habit     EcoHabit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@id([date, habitId])
+  @@index([habitId])
+  @@index([date])
+  @@map("global_stats")
+} 
